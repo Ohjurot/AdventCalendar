@@ -1,0 +1,27 @@
+# Conan output
+/conan.lock
+/conanbuildinfo.txt
+/conanbuildinfo.premake.lua
+/conaninfo.txt
+/graph_info.json
+/conan_imports_manifest.txt
+
+# Python
+**/__pycache__/**
+
+# Binary output
+/build
+/app/**.pem
+
+# Visual studio
+/.vs
+**.sln
+**.vcxproj
+**.vcxproj.user
+**.vcxproj.filters
+
+# VS-Code
+/JSON
+
+# Makefiles
+**Makefile**

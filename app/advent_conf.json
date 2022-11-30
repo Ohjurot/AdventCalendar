@@ -1,0 +1,13 @@
+{
+    "Server": {
+        "SSLCert" : "sslcert.pem",
+        "SSLKey" : "sslkey.pem",
+        "Host" : "localhost",
+        "Port" : 443
+    },
+
+    "App" : {
+        "Directory" : "./",
+        "PluginDir" : "../build/x86_64-debug/bin"
+    }
+}
