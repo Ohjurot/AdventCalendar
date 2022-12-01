@@ -1,0 +1,15 @@
+{% extends "base.jinja" %}
+
+{# PAGE HEAD#}
+{% block head %}
+<title>Advent Calendar</title>
+{% endblock %}
+
+{# PAGE BODY #}
+{% block body %}
+
+{% for i in range(DAY) %} 
+    <a href="{{ HOST }}/day/{{i + 1}}" class="btn btn-secondary">{{i + 1}}</a>&nbsp;
+{% endfor %}
+
+{% endblock %}

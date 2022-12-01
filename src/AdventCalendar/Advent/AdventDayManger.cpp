@@ -80,7 +80,9 @@ bool Advent::AdventDayManger::Invoke(int dayOfDecember, std::string& out)
     auto* day = GetDay(dayOfDecember);
     if (day)
     {
-        out = day->implementation->Render(*spdlog::default_logger());
+        auto dir = m_plugins[day->owner].dllPath;
+        dir.replace_extension(".d");
+        out = day->implementation->Render(dir, *spdlog::default_logger());
         return true;
     }
     

@@ -16,7 +16,7 @@ class HelloDay : public AdventAPI::IAdventDay
             m_day(day)
         {}
 
-        std::string Render(spdlog::logger& logger) override
+        std::string Render(const std::filesystem::path& baseDir, spdlog::logger& logger) override
         {
             std::stringstream ss;
             ss << "What a day " << m_day << " of December!";

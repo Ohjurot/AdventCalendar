@@ -54,12 +54,13 @@ int Advent::AdventApp::ApplicationMain(const argparse::ArgumentParser& args)
     std::filesystem::path configFile = args.get<std::string>("-c");
     std::ifstream configFileStream(configFile);
     ADVENT_ASSERT_FMT(configFileStream.is_open(), "Failed to open file {}", configFile.generic_string());
-    nlohmann::json config = nlohmann::json::parse(configFileStream);
+    nlohmann::json config = nlohmann::json::parse(configFileStream, nullptr, true, true);
     configFileStream.close();
     spdlog::debug("Loaded json config \"{}\"", nlohmann::to_string(config));
 
     // Application dir
     const std::filesystem::path appDir = config["App"]["Directory"];
+    m_serverDir = appDir;
     spdlog::debug("Application dir {}", appDir.generic_string());
 
     // Override day
@@ -68,6 +69,13 @@ int Advent::AdventApp::ApplicationMain(const argparse::ArgumentParser& args)
     // Load plugins
     spdlog::info("Loading plugins");
     m_days.Init(config["App"]["PluginDir"]);
+
+    // Load access tokens
+    for (auto& token : config["App"]["AccessTokens"])
+    {
+        m_accessTokens.push_back(token);
+    }
+    spdlog::info("Loaded {} access tokens from config.", m_accessTokens.size());
 
     // Configure web server
     m_server = new httplib::SSLServer(
@@ -102,6 +110,9 @@ int Advent::AdventApp::ApplicationMain(const argparse::ArgumentParser& args)
     m_server->Get("/",
         std::bind(&AdventApp::RequestIndex, this, std::placeholders::_1, std::placeholders::_2)
     );
+    m_server->Get("/auth",
+        std::bind(&AdventApp::RequestAuthentication, this, std::placeholders::_1, std::placeholders::_2)
+    );
     m_server->Get(R"(/day/(\d+))",
         std::bind(&AdventApp::RequestDay, this, std::placeholders::_1, std::placeholders::_2)
     );
@@ -127,38 +138,89 @@ void Advent::AdventApp::SetupSpdlog()
     spdlog::default_logger()->set_pattern("[%d.%m.%Y %H:%M:%S.%e] [%^%l%$] [%t] %v");
 }
 
+void Advent::AdventApp::RequestAuthentication(const httplib::Request& request, httplib::Response& response)
+{
+    // https://localhost/auth?token=YwJsUy22TrQfFnPmb4bVS459qcaB48KZn5Wqq77VZRDYZ365Tu7k7G4Ub9JzZ3AT
+
+    if (request.has_param("token"))
+    {
+        // Get and validate token
+        const std::string token = request.get_param_value("token");
+        bool tokenValid = false;
+        for (const auto& validToken : m_accessTokens)
+        {
+            if (token == validToken)
+            {
+                tokenValid = true;
+                break;
+            }
+        }
+
+        // Generate cookie
+        if (tokenValid)
+        {
+            std::string cookieHeader = "ADVENT_TOKEN=" + token + "; Max-Age=3600; Secure; SameSite=Strict";
+            response.set_header("Set-Cookie", cookieHeader);
+        }
+        else
+        {
+            std::string cookieHeader = "ADVENT_TOKEN=deleted; Max-Age=0; Secure; SameSite=Strict";
+            response.set_header("Set-Cookie", cookieHeader);
+        }
+    }
+
+    // Redirect
+    response.set_redirect("/");
+}
+
 void Advent::AdventApp::RequestIndex(const httplib::Request& request, httplib::Response& response)
 {
-    ADVENT_ASSERT(false, "Index");
+    if (IsAuthenticated(request))
+    {
+        nlohmann::json data;
+        data["HOST"] = "https://" + request.get_header_value("Host");
+        data["DAY"] = GetDecembersDay();
+
+        inja::Environment jenv;
+        std::string html = 
+            jenv.render_file((m_serverDir / "views" / "index.jinja").generic_string(), data);
+        response.set_content(html, "text/html;charset=utf-8");
+    }
 }
 
 void Advent::AdventApp::RequestDay(const httplib::Request& request, httplib::Response& response)
 {
-    // Get day as match
-    std::string daystr = request.matches[1];
-    int day = AssertDay(daystr);
+    if (IsAuthenticated(request))
+    {
+        // Get day as match
+        std::string daystr = request.matches[1];
+        int day = AssertDay(daystr);
 
-    // Call the day
-    std::string text;
-    ADVENT_ASSERT_FMT(m_days.Invoke(day, text), "Failed to render day {}", day);
+        // Call the day
+        std::string text;
+        ADVENT_ASSERT_FMT(m_days.Invoke(day, text), "Failed to render day {}", day);
 
-    // Send output
-    response.set_content(text, "text/html;charset=utf-8");
+        // Send output
+        response.set_content(text, "text/html;charset=utf-8");
+    }   
 }
 
 void Advent::AdventApp::RequestDayContent(const httplib::Request& request, httplib::Response& response)
 {
-    // Get day as match
-    std::string daystr = request.matches[1];
-    std::string file = request.matches[2];
-    int day = AssertDay(daystr);
+    if (IsAuthenticated(request))
+    {
+        // Get day as match
+        std::string daystr = request.matches[1];
+        std::string file = request.matches[2];
+        int day = AssertDay(daystr);
 
-    // Get days content
-    std::string content, mime;
-    bool result;
-    ADVENT_ASSERT_FMT(m_days.Content(day, file, result, content, mime), "Failed to get content of {} for day {}", file, day);
+        // Get days content
+        std::string content, mime;
+        bool result;
+        ADVENT_ASSERT_FMT(m_days.Content(day, file, result, content, mime), "Failed to get content of {} for day {}", file, day);
 
-    if(result) response.set_content(std::move(content), mime);
+        if (result) response.set_content(std::move(content), mime);
+    }
 }
 
 int Advent::AdventApp::AssertDay(std::string daystr)
@@ -172,31 +234,67 @@ int Advent::AdventApp::AssertDay(std::string daystr)
     ADVENT_ASSERT_FMT(day >= 1 && day <= 31, "Invalid day supplied got {} (\"{}\")", day, daystr);
 
     // Evaluate current day
-    int currentDay = -1;
-    if (m_overrideDay > 0 && m_overrideDay <= 31)
-    {
-        // Force the day
-        currentDay = m_overrideDay;
-    }
-    else
-    {
-        // Get current time
-        auto now = std::chrono::system_clock::now();
-        time_t timeNow = std::chrono::system_clock::to_time_t(now);
-        tm localTime = *localtime(&timeNow);
-
-        // 
-        if (localTime.tm_mon == 11)
-        {
-            currentDay = localTime.tm_mday;
-        }
-    }
+    int currentDay = GetDecembersDay();
     spdlog::trace("Day {} requested on {} (Force: {})", day, currentDay, m_overrideDay);
 
     // Evaluate current day
     ADVENT_ASSERT_FMT(currentDay >= 1 && currentDay >= day, "Tried to request {} on {}", day, currentDay);
 
     return day;
+}
+
+int Advent::AdventApp::GetDecembersDay()
+{
+    // Forced day
+    if (m_overrideDay > 0 && m_overrideDay <= 31)
+    {
+        return m_overrideDay;
+    }
+
+    // Get current time
+    auto now = std::chrono::system_clock::now();
+    time_t timeNow = std::chrono::system_clock::to_time_t(now);
+    tm localTime = *localtime(&timeNow);
+
+    // Is December
+    if (localTime.tm_mon == 11)
+    {
+        return localTime.tm_mday;
+    }
+
+    return -1;
+}
+
+bool Advent::AdventApp::IsAuthenticated(const httplib::Request& request)
+{
+    // Authenticating everyone if no token is provided
+    if (m_accessTokens.size() == 0)
+        return true;
+
+    // Authenticate using cookies
+    if (request.has_header("Cookie"))
+    {
+        const std::string cookieHeader = request.get_header_value("Cookie");
+        auto eqPos = cookieHeader.find_first_of('=');
+        if (eqPos != std::string::npos)
+        {
+            const std::string cookieName = cookieHeader.substr(0, eqPos);
+            const std::string cookieValue = cookieHeader.substr(eqPos + 1);
+
+            if (cookieName == "ADVENT_TOKEN")
+            {
+                for (const auto& token : m_accessTokens)
+                {
+                    if (token == cookieValue)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 void Advent::AdventApp::RequestStop()

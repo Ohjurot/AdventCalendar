@@ -13,6 +13,9 @@ namespace AdventAPI
             virtual ~IAdventDay() = default;
 
             virtual std::string Render(
+                // Input
+                const std::filesystem::path& baseDir,
+
                 // Logger
                 spdlog::logger& logger
             ) = 0;
