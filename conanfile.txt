@@ -12,13 +12,6 @@
     argparse/2.9
     nlohmann_json/3.11.2
 
-# DLL Copy imports
-[imports]
-    bin, *.dll -> ./build/dependencies
-    bin, *.so -> ./build/dependencies
-    lib, fmt*.lib -> ./build/dependencies
-    lib, spdlog*.lib -> ./build/dependencies
-
 # Dependencies configuration
 [options]
     # Httplin
@@ -29,11 +22,11 @@
 
     # SPD Log
     spdlog:header_only=False
-    spdlog:shared=True
+    spdlog:shared=False
 
     # FMT 
     fmt:header_only=False
-    fmt:shared=True
+    fmt:shared=False
 
     # stduuid
     stduuid:with_cxx20_span=True
