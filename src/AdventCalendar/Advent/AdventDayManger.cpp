@@ -73,7 +73,7 @@ void Advent::AdventDayManger::Init(const std::filesystem::path& pluginDir)
     LoadPlugins();
 }
 
-bool Advent::AdventDayManger::Invoke(int dayOfDecember, std::string& out)
+bool Advent::AdventDayManger::Invoke(int dayOfDecember, const std::filesystem::path& commonTemplates, const nlohmann::json& baseJson, std::string& out)
 {
     std::lock_guard janitor(m_mtx);
     
@@ -82,14 +82,14 @@ bool Advent::AdventDayManger::Invoke(int dayOfDecember, std::string& out)
     {
         auto dir = m_plugins[day->owner].dllPath;
         dir.replace_extension(".d");
-        out = day->implementation->Render(dir, *spdlog::default_logger());
+        out = day->implementation->Render(dir, commonTemplates, baseJson, *spdlog::default_logger());
         return true;
     }
     
     return false;
 }
 
-bool Advent::AdventDayManger::Content(int dayOfDecember, const std::string& file, bool& result, std::string& outData, std::string& outMime)
+size_t Advent::AdventDayManger::Content(int dayOfDecember, const std::string& file, char** outData, std::string& outMime)
 {
     std::lock_guard janitor(m_mtx);
 
@@ -98,11 +98,10 @@ bool Advent::AdventDayManger::Content(int dayOfDecember, const std::string& file
     {
         auto baseDir = m_plugins[day->owner].dllPath;
         baseDir.replace_extension(".d");
-        result = day->implementation->Content(baseDir, file, outData, outMime, *spdlog::default_logger());
-        return true;
+        return day->implementation->Content(baseDir, file, outData, outMime, *spdlog::default_logger());
     }
 
-    return false;
+    return 0;
 }
 
 AdventAPI::AdventDayInfo* Advent::AdventDayManger::GetDay(int dayOfDecember)

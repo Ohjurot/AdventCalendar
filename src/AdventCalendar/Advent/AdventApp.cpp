@@ -177,9 +177,7 @@ void Advent::AdventApp::RequestIndex(const httplib::Request& request, httplib::R
 {
     if (IsAuthenticated(request))
     {
-        nlohmann::json data;
-        data["HOST"] = "https://" + request.get_header_value("Host");
-        data["DAY"] = GetDecembersDay();
+        nlohmann::json data = GenerateDefaultJson(request);
 
         inja::Environment jenv;
         std::string html = 
@@ -198,7 +196,7 @@ void Advent::AdventApp::RequestDay(const httplib::Request& request, httplib::Res
 
         // Call the day
         std::string text;
-        ADVENT_ASSERT_FMT(m_days.Invoke(day, text), "Failed to render day {}", day);
+        ADVENT_ASSERT_FMT(m_days.Invoke(day, m_serverDir / "views", GenerateDefaultJson(request), text), "Failed to render day {}", day);
 
         // Send output
         response.set_content(text, "text/html;charset=utf-8");
@@ -215,11 +213,16 @@ void Advent::AdventApp::RequestDayContent(const httplib::Request& request, httpl
         int day = AssertDay(daystr);
 
         // Get days content
-        std::string content, mime;
-        bool result;
-        ADVENT_ASSERT_FMT(m_days.Content(day, file, result, content, mime), "Failed to get content of {} for day {}", file, day);
+        std::string mime;
+        char* data = nullptr;
+        size_t dataSize = m_days.Content(day, file, &data, mime);
 
-        if (result) response.set_content(std::move(content), mime);
+        if (data && dataSize) 
+            response.set_content(data, dataSize, mime);
+        if (data)
+            delete[] data;
+
+        ADVENT_ASSERT_FMT(dataSize, "Failed to get content of {} for day {}", file, day);
     }
 }
 
@@ -295,6 +298,15 @@ bool Advent::AdventApp::IsAuthenticated(const httplib::Request& request)
     }
 
     return false;
+}
+
+nlohmann::json Advent::AdventApp::GenerateDefaultJson(const httplib::Request& request)
+{
+    nlohmann::json data;
+    data["HOST"] = "https://" + request.get_header_value("Host");
+    data["DAY"] = GetDecembersDay();
+    
+    return data;
 }
 
 void Advent::AdventApp::RequestStop()

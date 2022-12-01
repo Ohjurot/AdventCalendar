@@ -9,6 +9,8 @@
 #include <dlfcn.h>
 #endif
 
+#include <nlohmann/json.hpp>
+
 #include <unordered_map>
 #include <vector>
 #include <filesystem>
@@ -43,8 +45,8 @@ namespace Advent
             AdventDayManger& operator=(const AdventDayManger&) = delete;
 
             void Init(const std::filesystem::path& pluginDir);
-            bool Invoke(int dayOfDecember, std::string& out);
-            bool Content(int dayOfDecember, const std::string& file, bool& result, std::string& outData, std::string& outMime);
+            bool Invoke(int dayOfDecember, const std::filesystem::path& commonTemplates, const nlohmann::json& baseJson, std::string& out);
+            size_t Content(int dayOfDecember, const std::string& file, char** outData, std::string& outMime);
 
         private:
             AdventAPI::AdventDayInfo* GetDay(int dayOfDecember);

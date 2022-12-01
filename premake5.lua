@@ -8,5 +8,6 @@ workspace "AdventCalendar"
 
     -- Include all projects
     include "src/AdventCalendar/build.lua"     
-    include "src/AdventAPI/build.lua"     
+    include "src/AdventAPI/build.lua"
+    include "src/AdventLib/build.lua"     
     include "src/Plugins/ExamplePlugin/build.lua"     

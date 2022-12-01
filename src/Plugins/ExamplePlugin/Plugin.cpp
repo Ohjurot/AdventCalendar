@@ -1,6 +1,8 @@
 #include "AdventAPI/IAdventPlugin.h"
 #include "AdventAPI/IAdventDay.h"
 
+#include "AdventLib/AdventDayBase.h"
+
 #include <sstream>
 
 #ifdef EXAMPLEPLUGIN_WINDOWS
@@ -9,28 +11,19 @@
 #define EXAMPLEPLUGIN_API ADVENTAPI_LINUX
 #endif
 
-class HelloDay : public AdventAPI::IAdventDay
+class HelloDay : public AdventLib::AdventDayBase
 {
     public:
         HelloDay(int day) :
             m_day(day)
         {}
 
-        std::string Render(const std::filesystem::path& baseDir, spdlog::logger& logger) override
+        std::string Render(nlohmann::json& data, spdlog::logger& logger) override
         {
-            std::stringstream ss;
-            ss << "What a day " << m_day << " of December!";
-            return ss.str();
+            return "example";
         }
 
-        bool Content(const std::filesystem::path& baseDir, const std::string& requestedFile, std::string& dataOut, std::string& mimeType, spdlog::logger& logger) override
-        {
-            auto path = baseDir / requestedFile;
-            logger.info("Requested file {}", path.generic_string());
-            return false;
-        }
-
-    private:
+private:
         int m_day;
 };
 

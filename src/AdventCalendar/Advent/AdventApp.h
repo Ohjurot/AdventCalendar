@@ -46,6 +46,7 @@ namespace Advent
             int AssertDay(std::string daystr);
             int GetDecembersDay();
             bool IsAuthenticated(const httplib::Request& request);
+            nlohmann::json GenerateDefaultJson(const httplib::Request& request);
 
             void RequestStop();
         
