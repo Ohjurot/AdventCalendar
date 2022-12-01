@@ -5,6 +5,8 @@
 
 #ifdef ADVENTCALENDAR_WINDOWS
 #include <Windows.h>
+#else
+#include <dlfcn.h>
 #endif
 
 #include <unordered_map>
@@ -20,7 +22,9 @@ namespace Advent
             struct AdventPlugin 
             {
                 #ifdef ADVENTCALENDAR_WINDOWS
-                HMODULE pluginModule;
+                HMODULE pluginModule = nullptr;
+                #else
+                void* pluginModule = nullptr;
                 #endif
 
                 AdventAPI::IAdventPlugin* instance = nullptr;

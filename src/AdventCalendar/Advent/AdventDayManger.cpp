@@ -2,12 +2,14 @@
 
 void Advent::AdventDayManger::AdventPlugin::Unload()
 {
-    #ifdef ADVENTCALENDAR_WINDOWS
     if (pluginModule)
     {
+        #ifdef ADVENTCALENDAR_WINDOWS
         FreeLibrary(pluginModule);
+        #else
+        dlclose(pluginModule);
+        #endif
     }
-    #endif
 
     spdlog::info("Unloaded plugin {}", dllPath.generic_string());
 }
@@ -30,6 +32,22 @@ bool Advent::AdventDayManger::AdventPlugin::Load()
             return instance != nullptr;
         }
     }
+    #else
+    pluginModule = dlopen(dllPath.string().c_str(), RTLD_LAZY);
+    if(pluginModule)
+    {
+        AdventAPI_Discovery discoverFuncion = 
+            (AdventAPI_Discovery)dlsym(pluginModule, "_Z18AdventCalendarMainPPN9AdventAPI13IAdventPluginE");
+        if (discoverFuncion)
+        {
+            discoverFuncion(&instance);
+            if (instance == nullptr)
+            {
+                Unload();
+            }
+            return instance != nullptr;
+        }
+    } 
     #endif
 
     return false;
