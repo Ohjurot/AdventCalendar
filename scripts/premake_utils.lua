@@ -39,6 +39,7 @@ function advent_new_project(projectName, path)
     -- Cpp
     language "C++"
     cppdialect "C++20"
+    pic "On"
 
     -- Defines
     defines { string.upper(projectName) .. "_BUILD" }
