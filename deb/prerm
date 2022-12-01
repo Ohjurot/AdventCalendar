@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# stop and remove service
+systemctl stop advent-calendar.service
+systemctl disable advent-calendar.service

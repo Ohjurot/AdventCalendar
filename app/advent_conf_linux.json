@@ -1,0 +1,15 @@
+{
+    "Server": {
+        "SSLCert" : "/etc/advent-calendar/sslcert.pem",
+        "SSLKey" : "/etc/advent-calendar/sslkey.pem",
+        "Host" : "localhost",
+        "Port" : 443
+    },
+
+    "App" : {
+        "Directory" : "/usr/bin/advent-calendar.d",
+        "PluginDir" : "/usr/bin/advent-calendar.d/plugins",
+        "AccessTokens" : [
+        ]
+    }
+}

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# make files executable
+chmod +x /usr/bin/advent-calendar
+
+# generate a temporary ssl certificate
+openssl req -x509 -newkey rsa:2048 -keyout /etc/advent-calendar/sslkey.pem -out /etc/advent-calendar/sslcert.pem -sha256 -days 365 -nodes -subj /CN=localhost
+
+# Allow port access
+setcap CAP_NET_BIND_SERVICE=+eip /usr/bin/advent-calendar
+
+# Allow all users to read from the configuration and application data
+chmod -R 775 /usr/bin/advent-calendar.d/
+chmod -R 775 /etc/advent-calendar/
+
+# enable service
+systemctl enable advent-calendar.service
+systemctl start advent-calendar.service

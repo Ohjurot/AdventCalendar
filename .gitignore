@@ -12,6 +12,7 @@
 # Binary output
 /build
 /app/**.pem
+/package
 
 # Visual studio
 /.vs

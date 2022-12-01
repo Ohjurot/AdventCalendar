@@ -1,0 +1,14 @@
+[Unit]
+Description=Advent Calendar webservice
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+User=www-data
+ExecStart=/usr/bin/advent-calendar -c /etc/advent-calendar/config.json
+
+[Install]
+WantedBy=multi-user.target
