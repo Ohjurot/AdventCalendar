@@ -2,7 +2,7 @@
     "Server": {
         "SSLCert" : "sslcert.pem",
         "SSLKey" : "sslkey.pem",
-        "Host" : "localhost",
+        "Host" : "172.16.1.11",
         "Port" : 443
     },
 

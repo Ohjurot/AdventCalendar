@@ -2,14 +2,22 @@
 
 {# PAGE HEAD#}
 {% block head %}
-<title>Advent Calendar</title>
+<title>Adventskalender</title>
 {% endblock %}
 
 {# PAGE BODY #}
 {% block body %}
+<a style="display:none" id="jsonFilePath" href="{{ HOST }}/res/positions.json"></a>
+<img style="display: none;" id="canvasImage" width="100%" height="100%" src="{{ HOST }}/res/index.jpg" alt="Advent">
+<canvas id="canvas"></canvas>
 
 {% for i in range(DAY) %} 
-    <a href="{{ HOST }}/day/{{i + 1}}" class="btn btn-secondary">{{i + 1}}</a>&nbsp;
+    <p style="display: none;" id="day{{i + 1}}"></p>
 {% endfor %}
 
+{% endblock %}
+
+{# PAGE SCRIPTS #}
+{% block scripts %}
+<script src="{{ HOST }}/res/advent.js"></script>
 {% endblock %}

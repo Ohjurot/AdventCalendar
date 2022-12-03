@@ -7,9 +7,35 @@
     {% endblock %}
     <link href="{{ HOST }}/res/bootstrap.min.css" rel="stylesheet">
   </head>
-  <body>
-    {% block body %}
-    {% endblock %}
+  <body style="background: lightgray;">
+    {# Header #}
+    <nav class="navbar navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand">Adventskalender</a>
+        <a href="{{ HOST }}" class="btn btn-outline-warning" type="submit">Startseite</a>
+      </div>
+    </nav>
+
+    {# Content #}
+    <div class="container mt-4">
+      <div class="card">
+        <div class="card-body" id="mainContainer">
+          {% block body %}
+          {% endblock %}
+        </div>
+      </div>
+    </div>
+
+    {# Footer #}
+    <div class="alert alert-primary m-2 mt-4" role="alert">
+      &copy; Copyright 2022 by Ludwig Füchsl - <a class="link-dark text-decoration-none" href="https://github.com/Ohjurot/AdventCalendar" target="_blank">Visit project on GitHub</a>
+    </div>
+
+    {# Scripts #}
     <script src="{{ HOST }}/res/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+    {% block scripts %}
+    {% endblock %}
   </body>
 </html>
+

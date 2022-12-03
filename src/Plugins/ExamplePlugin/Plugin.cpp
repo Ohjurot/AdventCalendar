@@ -3,7 +3,10 @@
 
 #include "AdventLib/AdventDayBase.h"
 
+#include <nlohmann/json.hpp>
+
 #include <sstream>
+#include <mutex>
 
 #ifdef EXAMPLEPLUGIN_WINDOWS
 #define EXAMPLEPLUGIN_API ADVENTAPI_WINDOWS
@@ -11,32 +14,74 @@
 #define EXAMPLEPLUGIN_API ADVENTAPI_LINUX
 #endif
 
-class HelloDay : public AdventLib::AdventDayBase
+class ImageDay : public AdventLib::AdventDayBase
 {
     public:
-        HelloDay(int day) :
+        ImageDay(int day) :
+            AdventLib::AdventDayBase(day),
             m_day(day)
-        {}
-
-        std::string Render(nlohmann::json& data, spdlog::logger& logger) override
         {
-            return "example";
         }
 
-private:
+        std::string Render(nlohmann::json& data, const std::filesystem::path& privateDir, spdlog::logger& logger) override
+        {
+            std::lock_guard janitor(m_lock);
+
+            if (m_caption.empty())
+            {
+                std::stringstream ss;
+                ss << m_day;
+
+                std::ifstream ifs(privateDir / "captions.json", std::ios::in);
+                nlohmann::json jf = nlohmann::json::parse(ifs);
+                if (jf.find(ss.str()) != jf.end())
+                {
+                    m_caption = jf[ss.str()];
+                }
+            }
+
+            std::stringstream ss;
+            ss << "content/" << m_day << "/image.jpg";
+
+            data["caption"] = m_caption;
+            data["image"] = ss.str();
+            return "default";
+        }
+
+    private:
+        std::mutex m_lock;
+
         int m_day;
+        std::string m_caption;
 };
 
 class ExamplePlugin : public AdventAPI::IAdventPlugin
 {
     public:
+        ExamplePlugin(int days = 24)
+        {
+            for (int i = 0; i < days; i++)
+            {
+                m_days.push_back(new ImageDay(i + 1));
+            }
+        }
+        
+        ~ExamplePlugin()
+        {
+            for (auto* day : m_days)
+                delete day;
+        }
+
         size_t RegisterAdventDays(AdventAPI::AdventDayInfo* infos, size_t infosMax) override
         {
-            infos[0] = { 1, 0, this, &d1 };
-            infos[1] = { 5, 0, this, &d5 };
-            infos[2] = { 10, 0, this, &d10 };
-            infos[3] = { 20, 0, this, &d20 };
-            return 4;
+            if (infosMax < m_days.size())
+                return 0;
+
+            int d = 1;
+            int i = 0;
+            for(auto* day : m_days)
+                infos[i++] = { d++, 0, this, day };
+            return m_days.size();
         }
 
         void Destroy() override
@@ -45,10 +90,7 @@ class ExamplePlugin : public AdventAPI::IAdventPlugin
         }
     
     private:
-        HelloDay d1{ 1 };
-        HelloDay d5{ 5 };
-        HelloDay d10{ 10 };
-        HelloDay d20{ 20 };
+        std::vector<ImageDay*> m_days;
 };
 
 void EXAMPLEPLUGIN_API ADVENTAPI_DISCOVERY_MAIN(AdventAPI::IAdventPlugin** ppPlugin)

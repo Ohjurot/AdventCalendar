@@ -1,0 +1,14 @@
+{% extends "base" %}
+
+{# PAGE HEAD#}
+{% block head %}
+<title>Advent Calendar</title>
+{% endblock %}
+
+{# PAGE BODY #}
+{% block body %}
+<a href="{{HOST}}/{{image}}">
+    <img src="{{HOST}}/{{image}}" alt="{{caption}}" width="100%" height="auto" />
+</a>
+{{ caption }}
+{% endblock %}

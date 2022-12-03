@@ -3,3 +3,5 @@ advent_exe()
 
 debugdir "%{wks.location}/app"
 debugargs { "-v", "-f", "24" }
+
+dependson { "ExamplePlugin" }
